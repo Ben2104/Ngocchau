@@ -1,0 +1,14 @@
+node_modules
+.pnpm-store
+.turbo
+.next
+dist
+coverage
+.DS_Store
+.env
+.env.local
+.env.*.local
+apps/web/.next
+apps/api/dist
+pnpm-lock.yaml
+

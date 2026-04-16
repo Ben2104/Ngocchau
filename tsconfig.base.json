@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "strict": true,
+    "skipLibCheck": true,
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@gold-shop/types": [
+        "packages/types/src/index.ts"
+      ],
+      "@gold-shop/constants": [
+        "packages/constants/src/index.ts"
+      ],
+      "@gold-shop/validation": [
+        "packages/validation/src/index.ts"
+      ],
+      "@gold-shop/utils": [
+        "packages/utils/src/index.ts"
+      ],
+      "@gold-shop/ui": [
+        "packages/ui/src/index.ts"
+      ],
+      "@gold-shop/ui/*": [
+        "packages/ui/src/*"
+      ]
+    }
+  }
+}
+
