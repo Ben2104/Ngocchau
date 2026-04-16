@@ -121,6 +121,39 @@ pnpm vercel:deploy:web
 - `.vercel/` is ignored so local project linkage does not get committed.
 - Backend runtime still depends on a valid `SUPABASE_SERVICE_ROLE_KEY` in `apps/api/.env`.
 
+## GitHub Actions CI/CD
+
+The repository now includes two workflows under `.github/workflows`:
+
+- `ci.yml`: runs on every pull request and on pushes to `main`, then executes `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build`.
+- `deploy.yml`: runs only after the `CI` workflow succeeds for a push to `main`, then deploys only the parts of the monorepo that changed.
+
+Deployment behavior:
+
+- Pull requests run CI only and never trigger production deploys.
+- Pushes to `main` run CI first.
+- After CI passes on `main`, the deploy workflow checks the changed paths.
+- Web-only changes deploy `apps/web` to Vercel.
+- API-only changes deploy `apps/api` to Railway.
+- Shared package changes can deploy both targets.
+- Docs-only changes still run CI, but the deploy jobs are skipped.
+
+Required GitHub Actions secrets:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+- `RAILWAY_TOKEN`
+- `RAILWAY_PROJECT_ID`
+- `RAILWAY_ENVIRONMENT`
+- `RAILWAY_SERVICE`
+
+Important runtime notes:
+
+- Keep application runtime secrets and environment variables in Vercel and Railway, not in GitHub Actions.
+- The CI workflow only injects safe placeholder public env values so the Next.js build can complete.
+- Supabase migrations remain manual in this first version of the pipeline. GitHub Actions does not auto-apply schema changes.
+
 ## Current Limitation
 
 This repository can be fully wired only after real Supabase project credentials are supplied. No hosted project ref or keys are stored in git.
