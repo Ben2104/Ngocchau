@@ -165,3 +165,4 @@ Important runtime notes:
 ## Current Limitation
 
 This repository can be fully wired only after real Supabase project credentials are supplied. No hosted project ref or keys are stored in git.
+
