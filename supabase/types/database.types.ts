@@ -1,7 +1,9 @@
 /**
  * Replace this placeholder by generating types from the target Supabase project:
  *
- * supabase gen types typescript --project-id <project-ref> --schema public > supabase/types/database.types.ts
+ * 1. npx supabase login
+ * 2. npx supabase link --project-ref <project-ref>
+ * 3. npx supabase gen types --linked --lang=typescript --schema public > supabase/types/database.types.ts
  */
 
 export type Json =
@@ -21,4 +23,3 @@ export interface Database {
     CompositeTypes: Record<string, never>;
   };
 }
-

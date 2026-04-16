@@ -3,33 +3,43 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { DASHBOARD_NAV_ITEMS } from "@gold-shop/constants";
+import { PRIMARY_NAV_ITEMS } from "@gold-shop/constants";
 import { cn } from "@gold-shop/ui";
+
+import { NavIcon } from "@/components/layout/nav-icon";
+
+function isActivePath(pathname: string, href: string): boolean {
+  if (href === "/dashboard") {
+    return pathname === href;
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function SidebarNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="space-y-1">
-      {DASHBOARD_NAV_ITEMS.map((item) => {
-        const isActive = pathname === item.href;
+    <nav className="space-y-2">
+      {PRIMARY_NAV_ITEMS.map((item) => {
+        const isActive = isActivePath(pathname, item.href);
 
         return (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center rounded-xl px-4 py-3 text-sm font-medium transition-colors",
+              "group flex items-center gap-3 rounded-xl px-4 py-3 text-base font-medium transition-all duration-200",
               isActive
-                ? "bg-stone-900 text-stone-50"
-                : "text-stone-600 hover:bg-stone-100 hover:text-stone-950"
+                ? "bg-brand-gradient text-white shadow-brand"
+                : "text-slate-600 hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-foreground-strong)]"
             )}
           >
-            {item.label}
+            <NavIcon icon={item.icon} className="h-[18px] w-[18px] shrink-0" />
+            <span>{item.label}</span>
           </Link>
         );
       })}
     </nav>
   );
 }
-

@@ -1,5 +1,38 @@
 :root {
-  --panel-radius: 1.5rem;
-  --panel-shadow: 0 18px 45px -24px rgba(68, 64, 60, 0.35);
-}
+  --background: 220 20% 98%;
+  --foreground: 213 13% 13%;
+  --card: 0 0% 100%;
+  --primary: 46 100% 41%;
+  --secondary: 220 9% 91%;
+  --muted: 220 16% 95%;
+  --accent: 222 43% 45%;
+  --border: 35 29% 85%;
+  --ring: 46 100% 41%;
 
+  --color-brand-gold: #735c00;
+  --color-brand-gold-soft: #d4af37;
+  --color-brand-gold-faint: #ffe088;
+  --color-brand-blue: #415ba4;
+  --color-surface-base: #f9f9fa;
+  --color-surface-muted: #f3f3f4;
+  --color-surface-subtle: #e8e8e9;
+  --color-foreground-strong: #1a1c1d;
+  --color-foreground-soft: #475569;
+  --color-foreground-muted: #64748b;
+  --color-border-soft: rgba(115, 92, 0, 0.1);
+  --color-success-bg: #f0fdf4;
+  --color-success-fg: #15803d;
+  --color-danger-bg: #ffdad6;
+  --color-danger-fg: #93000a;
+  --color-warning-bg: rgba(255, 224, 136, 0.4);
+  --color-warning-fg: #735c00;
+  --color-info-bg: rgba(65, 91, 164, 0.12);
+  --color-info-fg: #415ba4;
+
+  --radius-panel: 24px;
+  --radius-panel-lg: 32px;
+  --radius-pill: 9999px;
+  --shadow-panel: 0px 10px 30px 0px rgba(26, 28, 29, 0.05);
+  --shadow-brand: 0px 10px 15px -3px rgba(115, 92, 0, 0.2), 0px 4px 6px -4px rgba(115, 92, 0, 0.2);
+  --shadow-fab: 0px 25px 50px -12px rgba(0, 0, 0, 0.25);
+}

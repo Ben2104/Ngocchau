@@ -29,14 +29,19 @@ docs/
 
 ## Environment Setup
 
-1. Copy the example env files:
+1. Fill the local env files that are already scaffolded for this workspace:
+   - `.env`
+   - `apps/api/.env`
+   - `apps/web/.env.local`
+2. If you prefer to start from scratch, copy the examples instead:
    - `cp .env.example .env`
    - `cp apps/web/.env.example apps/web/.env.local`
    - `cp apps/api/.env.example apps/api/.env`
-2. Install Node.js 20+ and pnpm 9+.
-3. Install dependencies:
+3. Replace every `replace-with-*` placeholder with values from a hosted Supabase dev or staging project.
+4. Install Node.js 20+ and pnpm 9+.
+5. Install dependencies:
    - `pnpm install`
-4. Run the apps:
+6. Run the apps:
    - `pnpm dev`
    - `pnpm dev:web`
    - `pnpm dev:api`
@@ -44,11 +49,30 @@ docs/
 ## Supabase Notes
 
 - The scaffold assumes `auth.users` already exists and user-role mapping is available through `public.users` or `public.profiles`.
+- Runtime should point at a hosted Supabase dev or staging project, not production.
 - Minimal support migrations are included only for `audit_logs` and `import_sessions`.
-- Replace the placeholder type file at `supabase/types/database.types.ts` by generating types from Supabase:
+- `supabase/config.toml` is included as minimal CLI metadata for this repo. The initial setup is remote-first and does not require `supabase start`.
+- Link the repo to your hosted project and inspect migrations with the Supabase CLI:
 
 ```bash
-supabase gen types typescript --project-id your-project-ref --schema public > supabase/types/database.types.ts
+npx supabase login
+npx supabase link --project-ref <your-project-ref>
+npx supabase migration list
+npx supabase gen types --linked --lang=typescript --schema public > supabase/types/database.types.ts
+```
+
+- The generated type file is imported by both `apps/web` and `apps/api`, so regenerate it whenever the remote schema changes.
+- Detailed setup notes, MCP guidance, and verification steps live in `docs/supabase-setup.md`.
+
+## Supabase MCP
+
+- Add a project-scoped, read-only MCP server to `~/.codex/config.toml`.
+- Use a dev or staging project only. Gold shop data includes transactions, cashbook, and audit trails, so production access through MCP is intentionally discouraged.
+- Recommended URL shape:
+
+```toml
+[mcp_servers.supabase]
+url = "https://mcp.supabase.com/mcp?project_ref=<your-project-ref>&read_only=true"
 ```
 
 ## Commands
@@ -61,5 +85,4 @@ supabase gen types typescript --project-id your-project-ref --schema public > su
 
 ## Current Limitation
 
-This repository was scaffolded in an environment where `node` and `pnpm` were not available on `PATH`, so dependency installation and runtime verification still need to be executed after the toolchain is installed locally.
-
+This repository can be fully wired only after real Supabase project credentials are supplied. No hosted project ref or keys are stored in git.
