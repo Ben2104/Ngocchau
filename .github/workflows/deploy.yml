@@ -70,8 +70,13 @@ jobs:
         run: |
           {
             echo "### Deployment path detection"
+            echo "- Trigger source: workflow_run after CI"
+            echo "- Tested commit: ${{ github.event.workflow_run.head_sha }}"
             echo "- Web deploy: ${{ steps.filter.outputs.web }}"
             echo "- API deploy: ${{ steps.filter.outputs.api }}"
+            echo
+            echo "Web production deploy is expected to run from this workflow only after CI succeeds on main."
+            echo "Disable Vercel Git auto-deploy for this project so it does not start a parallel deployment before this workflow."
             echo
             echo '```text'
             if git rev-parse HEAD^ >/dev/null 2>&1; then
@@ -86,6 +91,8 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.web == 'true'
     runs-on: ubuntu-latest
+    environment:
+      name: production
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -113,6 +120,12 @@ jobs:
           test -n "$VERCEL_ORG_ID"
           test -n "$VERCEL_PROJECT_ID"
 
+      - name: Validate monorepo build configuration
+        shell: bash
+        run: |
+          node -e 'const pkg=require("./package.json"); if (!pkg.scripts || !pkg.scripts["build:web"]) { throw new Error("Root package.json must define build:web for Vercel production builds."); }'
+          node -e 'const config=require("./vercel.json"); if (config.buildCommand !== "pnpm build:web") { throw new Error(`Expected vercel.json buildCommand to be \"pnpm build:web\", received \"${config.buildCommand}\".`); }'
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -127,6 +140,8 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.api == 'true'
     runs-on: ubuntu-latest
+    environment:
+      name: production
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}

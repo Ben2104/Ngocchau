@@ -114,7 +114,8 @@ pnpm vercel:run -- link
 
 5. In the Vercel project settings, confirm the project builds from the repository root so workspace packages under `packages/*` are installed and linked during the build.
 6. Set the install command to `pnpm install --frozen-lockfile` and the build command to `pnpm build:web` if the dashboard settings are not already inheriting them from `vercel.json`.
-7. Deploy production:
+7. Turn off Vercel Git auto-deploy for production so push events do not start a second deploy outside GitHub Actions.
+8. Deploy production:
 
 ```bash
 pnpm vercel:deploy:web
@@ -124,6 +125,7 @@ pnpm vercel:deploy:web
 - `.vercel/` is ignored so local project linkage does not get committed.
 - `pnpm build:web` expands to `turbo run build --filter=@gold-shop/web...`, which builds the web app and the shared workspace packages it depends on before Next.js runs.
 - `@gold-shop/ui` and the other shared packages are resolved as monorepo workspaces, so the Vercel project must not be configured as an isolated `apps/web` checkout.
+- If Vercel Git auto-deploy stays enabled, Vercel can start a parallel production build on push before `.github/workflows/deploy.yml` runs.
 - Backend runtime still depends on a valid `SUPABASE_SERVICE_ROLE_KEY` in `apps/api/.env`.
 
 ## GitHub Actions CI/CD
@@ -137,7 +139,8 @@ Deployment behavior:
 
 - Pull requests run CI only and never trigger production deploys.
 - Pushes to `main` run CI first.
-- After CI passes on `main`, the deploy workflow checks the changed paths.
+- After CI passes on `main`, the deploy workflow checks the changed paths and performs the production deploys.
+- Web production deploy should be owned by `deploy.yml`; disable Vercel Git auto-deploy so Vercel does not run a second production deployment in parallel.
 - Web-only changes deploy `apps/web` to Vercel.
 - API-only changes deploy `apps/api` to Railway.
 - Shared package changes can deploy both targets.
