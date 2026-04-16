@@ -112,8 +112,9 @@ pnpm vercel:projects
 pnpm vercel:run -- link
 ```
 
-5. In the Vercel project settings, confirm the repo is imported from the repository root and the Root Directory is `apps/web`.
-6. Deploy production:
+5. In the Vercel project settings, confirm the project builds from the repository root so workspace packages under `packages/*` are installed and linked during the build.
+6. Set the install command to `pnpm install --frozen-lockfile` and the build command to `pnpm --filter @gold-shop/web build` if the dashboard settings are not already inheriting them from `vercel.json`.
+7. Deploy production:
 
 ```bash
 pnpm vercel:deploy:web
@@ -121,6 +122,7 @@ pnpm vercel:deploy:web
 
 - The wrapper script appends `--token` automatically from `VERCEL_TOKEN`.
 - `.vercel/` is ignored so local project linkage does not get committed.
+- `@gold-shop/ui` and the other shared packages are resolved as monorepo workspaces, so the Vercel project must not be configured as an isolated `apps/web` checkout.
 - Backend runtime still depends on a valid `SUPABASE_SERVICE_ROLE_KEY` in `apps/api/.env`.
 
 ## GitHub Actions CI/CD
