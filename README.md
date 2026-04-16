@@ -46,6 +46,8 @@ docs/
    - `pnpm dev:web`
    - `pnpm dev:api`
 
+For the day-to-day local workflow, command examples, and troubleshooting, use [docs/run-app.md](/Users/kaydee/Desktop/Desktop%20-%20Kaydee's%20Macbook/Ngocchau/docs/run-app.md:1).
+
 ## Supabase Notes
 
 - The scaffold assumes `auth.users` already exists and user-role mapping is available through `public.users` or `public.profiles`.
