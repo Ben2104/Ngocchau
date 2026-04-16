@@ -82,6 +82,44 @@ url = "https://mcp.supabase.com/mcp?project_ref=<your-project-ref>&read_only=tru
 - `pnpm lint`: run workspace lint scripts
 - `pnpm typecheck`: run TypeScript checks
 - `pnpm test`: run placeholder test commands
+- `pnpm vercel:whoami`: verify Vercel token-based CLI auth
+- `pnpm vercel:projects`: list Vercel projects with the current token
+- `pnpm vercel:deploy:web`: production deploy through the token wrapper
+
+## Vercel Token Workflow
+
+Use a Vercel personal or team token instead of `vercel login` on this machine.
+
+1. Create a token in the Vercel dashboard.
+2. Export it only in your current shell:
+
+```bash
+export VERCEL_TOKEN=your-token
+```
+
+3. Verify auth and project access:
+
+```bash
+pnpm vercel:whoami
+pnpm vercel:projects
+```
+
+4. Link the repo to the target Vercel project from the repo root:
+
+```bash
+pnpm vercel:run -- link
+```
+
+5. In the Vercel project settings, confirm the repo is imported from the repository root and the Root Directory is `apps/web`.
+6. Deploy production:
+
+```bash
+pnpm vercel:deploy:web
+```
+
+- The wrapper script appends `--token` automatically from `VERCEL_TOKEN`.
+- `.vercel/` is ignored so local project linkage does not get committed.
+- Backend runtime still depends on a valid `SUPABASE_SERVICE_ROLE_KEY` in `apps/api/.env`.
 
 ## Current Limitation
 

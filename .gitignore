@@ -10,7 +10,8 @@ coverage
 .env.*.local
 apps/web/.next
 apps/api/dist
-pnpm-lock.yaml
+package-lock.json
+.vercel
 
 .gitnexus
 /AGENTS.md

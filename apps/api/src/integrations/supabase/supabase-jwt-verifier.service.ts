@@ -10,9 +10,11 @@ interface SupabaseJwtPayload {
 
 @Injectable()
 export class SupabaseJwtVerifierService {
-  private readonly jwks = createRemoteJWKSet(new URL(this.configService.getOrThrow<string>("SUPABASE_JWKS_URL")));
+  private readonly jwks: ReturnType<typeof createRemoteJWKSet>;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) {
+    this.jwks = createRemoteJWKSet(new URL(this.configService.getOrThrow<string>("SUPABASE_JWKS_URL")));
+  }
 
   async verifyAccessToken(token: string): Promise<SupabaseJwtPayload> {
     try {
@@ -31,4 +33,3 @@ export class SupabaseJwtVerifierService {
     }
   }
 }
-

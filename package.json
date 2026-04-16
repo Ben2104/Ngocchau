@@ -10,7 +10,11 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "dev:web": "pnpm --filter @gold-shop/web dev",
-    "dev:api": "pnpm --filter @gold-shop/api start:dev"
+    "dev:api": "pnpm --filter @gold-shop/api start:dev",
+    "vercel:run": "node scripts/vercel-token-cli.mjs",
+    "vercel:whoami": "pnpm vercel:run -- whoami",
+    "vercel:projects": "pnpm vercel:run -- projects ls",
+    "vercel:deploy:web": "pnpm vercel:run -- deploy --prod"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
@@ -18,4 +22,3 @@
     "typescript": "^5.7.2"
   }
 }
-

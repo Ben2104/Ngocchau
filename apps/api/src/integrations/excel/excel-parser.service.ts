@@ -37,7 +37,7 @@ export class ExcelParserService {
     errors: ExcelImportValidationError[];
   }> {
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
+    await workbook.xlsx.load(buffer as unknown as Parameters<typeof workbook.xlsx.load>[0]);
 
     const worksheet = workbook.worksheets[0];
 
@@ -46,12 +46,27 @@ export class ExcelParserService {
     }
 
     const headerRow = worksheet.getRow(1);
-    const headers = headerRow.values
+    const rawHeaderValues = Array.isArray(headerRow.values) ? headerRow.values : [];
+    const headers = rawHeaderValues
       .slice(1)
-      .map((value) => mapHeaderToField(normalizeHeader(value)))
-      .filter((value): value is keyof ExcelImportRowInput => Boolean(value));
+      .flatMap((value, index) => {
+        const field = mapHeaderToField(normalizeHeader(value));
 
-    if (!headers.includes("productCode") || !headers.includes("productName") || !headers.includes("quantity")) {
+        return field
+          ? [
+              {
+                columnIndex: index + 1,
+                field
+              }
+            ]
+          : [];
+      });
+
+    if (
+      !headers.some((header) => header.field === "productCode") ||
+      !headers.some((header) => header.field === "productName") ||
+      !headers.some((header) => header.field === "quantity")
+    ) {
       throw new BadRequestException(
         "Excel header must include at least product_code, product_name, quantity, unit_price, and transaction_date"
       );
@@ -65,8 +80,8 @@ export class ExcelParserService {
         return;
       }
 
-      const payload = headers.reduce<Record<string, unknown>>((accumulator, header, index) => {
-        accumulator[header] = row.getCell(index + 1).value;
+      const payload = headers.reduce<Record<string, unknown>>((accumulator, header) => {
+        accumulator[header.field] = row.getCell(header.columnIndex).value;
         return accumulator;
       }, {});
 
@@ -91,4 +106,3 @@ export class ExcelParserService {
     };
   }
 }
-
