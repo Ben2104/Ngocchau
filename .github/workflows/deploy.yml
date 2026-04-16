@@ -123,8 +123,8 @@ jobs:
       - name: Validate monorepo build configuration
         shell: bash
         run: |
-          node -e 'const pkg=require("./package.json"); if (!pkg.scripts || !pkg.scripts["build:web"]) { throw new Error("Root package.json must define build:web for Vercel production builds."); }'
-          node -e 'const config=require("./vercel.json"); if (config.buildCommand !== "pnpm build:web") { throw new Error(`Expected vercel.json buildCommand to be \"pnpm build:web\", received \"${config.buildCommand}\".`); }'
+          node -e 'const pkg=require("./apps/web/package.json"); if (!pkg.scripts || !pkg.scripts["build"]) { throw new Error("apps/web/package.json must define a build script for Vercel deployments."); }'
+          node -e 'const config=require("./vercel.json"); if (Object.prototype.hasOwnProperty.call(config, "buildCommand")) { throw new Error("vercel.json must not override buildCommand; the Vercel project should use apps/web project settings instead."); }'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

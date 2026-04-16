@@ -112,8 +112,8 @@ pnpm vercel:projects
 pnpm vercel:run -- link
 ```
 
-5. In the Vercel project settings, confirm the project builds from the repository root so workspace packages under `packages/*` are installed and linked during the build.
-6. Set the install command to `pnpm install --frozen-lockfile` and the build command to `pnpm build:web` if the dashboard settings are not already inheriting them from `vercel.json`.
+5. In the Vercel project settings, set the Root Directory to `apps/web` and enable `Include files outside the root directory in the Build Step` so shared workspace packages under `packages/*` are available during the build.
+6. Turn off the Build Command override and let the `apps/web` package use its default `build` script. If you keep an explicit install override, use `pnpm install --frozen-lockfile`.
 7. Turn off Vercel Git auto-deploy for production so push events do not start a second deploy outside GitHub Actions.
 8. Deploy production:
 
@@ -123,8 +123,8 @@ pnpm vercel:deploy:web
 
 - The wrapper script appends `--token` automatically from `VERCEL_TOKEN`.
 - `.vercel/` is ignored so local project linkage does not get committed.
-- `pnpm build:web` expands to `turbo run build --filter=@gold-shop/web...`, which builds the web app and the shared workspace packages it depends on before Next.js runs.
-- `@gold-shop/ui` and the other shared packages are resolved as monorepo workspaces, so the Vercel project must not be configured as an isolated `apps/web` checkout.
+- The Vercel project should build from `apps/web`, but it must also include files outside the root directory during the build so workspace packages under `packages/*` remain accessible.
+- Do not keep a `buildCommand` override in `vercel.json`; preview deployments should use the Vercel project settings for `apps/web`.
 - If Vercel Git auto-deploy stays enabled, Vercel can start a parallel production build on push before `.github/workflows/deploy.yml` runs.
 - Backend runtime still depends on a valid `SUPABASE_SERVICE_ROLE_KEY` in `apps/api/.env`.
 
@@ -165,4 +165,3 @@ Important runtime notes:
 ## Current Limitation
 
 This repository can be fully wired only after real Supabase project credentials are supplied. No hosted project ref or keys are stored in git.
-
