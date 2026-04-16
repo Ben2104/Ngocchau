@@ -46,7 +46,7 @@ docs/
    - `pnpm dev:web`
    - `pnpm dev:api`
 
-For the day-to-day local workflow, command examples, and troubleshooting, use [docs/run-app.md](/Users/kaydee/Desktop/Desktop%20-%20Kaydee's%20Macbook/Ngocchau/docs/run-app.md:1).
+For the day-to-day local workflow, command examples, and troubleshooting, use [docs/run-app.md](docs/run-app.md).
 
 ## Supabase Notes
 
@@ -113,7 +113,7 @@ pnpm vercel:run -- link
 ```
 
 5. In the Vercel project settings, confirm the project builds from the repository root so workspace packages under `packages/*` are installed and linked during the build.
-6. Set the install command to `pnpm install --frozen-lockfile` and the build command to `pnpm --filter @gold-shop/web build` if the dashboard settings are not already inheriting them from `vercel.json`.
+6. Set the install command to `pnpm install --frozen-lockfile` and the build command to `pnpm build:web` if the dashboard settings are not already inheriting them from `vercel.json`.
 7. Deploy production:
 
 ```bash
@@ -122,6 +122,7 @@ pnpm vercel:deploy:web
 
 - The wrapper script appends `--token` automatically from `VERCEL_TOKEN`.
 - `.vercel/` is ignored so local project linkage does not get committed.
+- `pnpm build:web` expands to `turbo run build --filter=@gold-shop/web...`, which builds the web app and the shared workspace packages it depends on before Next.js runs.
 - `@gold-shop/ui` and the other shared packages are resolved as monorepo workspaces, so the Vercel project must not be configured as an isolated `apps/web` checkout.
 - Backend runtime still depends on a valid `SUPABASE_SERVICE_ROLE_KEY` in `apps/api/.env`.
 

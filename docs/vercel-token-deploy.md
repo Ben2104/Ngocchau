@@ -46,12 +46,13 @@ In the Vercel dashboard, keep the project rooted at the monorepo and use these c
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm --filter @gold-shop/web build
+pnpm build:web
 ```
 
 ## Notes
 
 - `.vercel/` stays local and is ignored by git.
 - This only solves Vercel authentication. It does not fix backend credentials.
+- `pnpm build:web` expands to `turbo run build --filter=@gold-shop/web...`, which builds the web app together with the shared workspace packages it imports.
 - Do not configure the project as an isolated `apps/web` checkout, or shared packages like `@gold-shop/ui` may fail to resolve during the build.
 - The current backend still requires a valid `SUPABASE_SERVICE_ROLE_KEY` before the full MVP can be verified end-to-end.
