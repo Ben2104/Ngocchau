@@ -10,6 +10,26 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
+    "paths": {
+      "@gold-shop/types": [
+        "../../packages/types/src/index.ts"
+      ],
+      "@gold-shop/constants": [
+        "../../packages/constants/src/index.ts"
+      ],
+      "@gold-shop/validation": [
+        "../../packages/validation/src/index.ts"
+      ],
+      "@gold-shop/utils": [
+        "../../packages/utils/src/index.ts"
+      ],
+      "@gold-shop/ui": [
+        "../../packages/ui/src/index.ts"
+      ],
+      "@gold-shop/ui/*": [
+        "../../packages/ui/src/*"
+      ]
+    },
     "incremental": true
   },
   "include": [
@@ -20,4 +40,3 @@
     "dist"
   ]
 }
-

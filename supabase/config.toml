@@ -1,0 +1,5 @@
+# Minimal Supabase CLI metadata for this workspace.
+# This repo is configured for a hosted Supabase project first.
+# Local Docker services can be added later if the team chooses a local-first flow.
+
+project_id = "ngocchau"

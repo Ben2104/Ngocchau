@@ -20,9 +20,8 @@ export function SignOutButton() {
   }
 
   return (
-    <Button variant="outline" onClick={handleSignOut} disabled={isPending}>
+    <Button variant="outline" size="sm" onClick={handleSignOut} disabled={isPending} className="h-9 px-3 text-xs">
       {isPending ? "Đang đăng xuất..." : "Đăng xuất"}
     </Button>
   );
 }
-

@@ -5,13 +5,14 @@ import { publicEnv } from "@/lib/utils/env";
 
 export async function getServerSupabaseClient() {
   const cookieStore = await cookies();
+  type CookieSetterOptions = Parameters<typeof cookieStore.set>[2];
 
   return createServerClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet: Array<{ name: string; value: string; options?: CookieSetterOptions }>) {
         try {
           cookiesToSet.forEach(({ name, value, options }) => {
             cookieStore.set(name, value, options);
@@ -23,4 +24,3 @@ export async function getServerSupabaseClient() {
     }
   });
 }
-

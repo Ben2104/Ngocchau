@@ -15,6 +15,43 @@ export function formatDateTime(value: string | Date): string {
   }).format(date);
 }
 
+export function formatShortDate(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value);
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(date);
+}
+
+export function formatStorageSize(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) {
+    return "0 B";
+  }
+
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const exponent = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
+  const size = value / 1024 ** exponent;
+  const maximumFractionDigits = exponent === 0 ? 0 : 1;
+
+  return `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits }).format(size)} ${units[exponent]}`;
+}
+
+export function formatPercent(value: number, maximumFractionDigits = 0): string {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "percent",
+    maximumFractionDigits
+  }).format(value);
+}
+
+export function formatCompactNumber(value: number): string {
+  return new Intl.NumberFormat("vi-VN", {
+    notation: "compact",
+    maximumFractionDigits: 1
+  }).format(value);
+}
+
 export function compactObject<T extends Record<string, unknown>>(value: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(value).filter(([, item]) => item !== undefined && item !== null && item !== "")
@@ -64,3 +101,11 @@ export function groupByDate<T>(
   }, {});
 }
 
+export function getInitials(value: string): string {
+  return value
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}

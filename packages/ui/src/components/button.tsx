@@ -4,19 +4,21 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../lib/cn";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-amber-500 text-stone-950 hover:bg-amber-400",
-        outline: "border border-stone-300 bg-white text-stone-900 hover:bg-stone-50",
-        secondary: "bg-stone-900 text-stone-50 hover:bg-stone-800",
-        ghost: "text-stone-700 hover:bg-stone-100"
+        default:
+          "bg-[linear-gradient(135deg,#735c00_0%,#d4af37_100%)] text-white shadow-[0px_10px_20px_-12px_rgba(115,92,0,0.55)] hover:brightness-105",
+        outline: "border border-stone-200 bg-white text-stone-900 hover:bg-stone-50",
+        secondary: "bg-stone-100 text-stone-900 hover:bg-stone-200",
+        ghost: "text-stone-700 hover:bg-stone-100",
+        destructive: "bg-red-50 text-red-700 hover:bg-red-100"
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-lg px-3",
-        lg: "h-11 rounded-xl px-6",
+        default: "h-12 px-5 py-3",
+        sm: "h-10 rounded-xl px-4",
+        lg: "h-14 rounded-2xl px-7 text-base",
         icon: "h-10 w-10"
       }
     },
@@ -40,4 +42,3 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button";
 
 export { Button, buttonVariants };
-

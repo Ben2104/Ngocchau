@@ -12,3 +12,6 @@ apps/web/.next
 apps/api/dist
 pnpm-lock.yaml
 
+.gitnexus
+/AGENTS.md
+.codex/*
