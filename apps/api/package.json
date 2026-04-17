@@ -3,10 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "build": "nest build",
-    "dev": "nest start --watch",
+    "build": "node ../../scripts/api-workspace.mjs build",
+    "dev": "node ../../scripts/api-workspace.mjs workspace-dev",
     "start": "node dist/main.js",
-    "start:dev": "nest start --watch",
+    "start:dev": "node ../../scripts/api-workspace.mjs dev",
     "lint": "tsc --noEmit -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "echo \"No tests configured for @gold-shop/api\""
@@ -38,4 +38,3 @@
     "typescript": "^5.7.2"
   }
 }
-

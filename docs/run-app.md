@@ -57,6 +57,7 @@ What this gives you:
 - Next.js web app on `http://localhost:3000`
 - NestJS API on `http://localhost:4000`
 - shared package watchers through Turbo
+- an initial API build so workspace runtime packages exist before Nest starts
 
 ## Run Only the Web App
 
@@ -85,6 +86,13 @@ The API runs on:
 - global prefix: `/api`
 - default version prefix: `/v1`
 
+What `pnpm dev:api` also does:
+
+- builds `@gold-shop/types`, `@gold-shop/constants`, `@gold-shop/validation`, and `@gold-shop/utils` first
+- starts watchers for those packages
+- recompiles the API with `tsc --watch`
+- restarts the API runtime when those package outputs change
+
 Example base URL used by the web app:
 
 - `http://localhost:4000/api/v1`
@@ -93,7 +101,7 @@ Example base URL used by the web app:
 
 - Run `pnpm dev` for normal full-stack local testing.
 - Run `pnpm dev:web` for UI-only work when the API is already available.
-- Run `pnpm dev:api` for backend-only work or API debugging.
+- Run `pnpm dev:api` for backend-only work, API debugging, or when you are editing shared runtime packages used by the API.
 
 ## Quick Verification Checklist
 

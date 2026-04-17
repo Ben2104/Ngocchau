@@ -13,12 +13,40 @@ interface DateRangeInput {
   to: string;
 }
 
+type SupabaseQueryError = {
+  code?: string;
+  message?: string;
+} | null;
+
+type DashboardRow = Record<string, unknown>;
+
+function isMissingTableError(error: SupabaseQueryError) {
+  return error?.code === "42P01" || error?.code === "PGRST205";
+}
+
 @Injectable()
 export class DashboardRepository {
   constructor(
     private readonly configService: ConfigService,
     private readonly supabaseAdminService: SupabaseAdminService
   ) {}
+
+  private get allowDevelopmentFallback() {
+    return this.configService.getOrThrow<string>("NODE_ENV") === "development";
+  }
+
+  // Local dev can start against an empty hosted Supabase project before schema import is ready.
+  private resolveRowsOrThrow(data: unknown[] | null, error: SupabaseQueryError, message: string): DashboardRow[] {
+    if (error) {
+      if (this.allowDevelopmentFallback && isMissingTableError(error)) {
+        return [];
+      }
+
+      throw new InternalServerErrorException(`${message}: ${error.message}`);
+    }
+
+    return (data ?? []) as DashboardRow[];
+  }
 
   async getSummary(range: DateRangeInput): Promise<DashboardSummary> {
     const transactions = await this.fetchTransactions(range);
@@ -127,7 +155,7 @@ export class DashboardRepository {
     return Object.values(baseMap);
   }
 
-  private async fetchTransactions(range: DateRangeInput) {
+  private async fetchTransactions(range: DateRangeInput): Promise<DashboardRow[]> {
     const tableName = this.configService.getOrThrow<string>("APP_TRANSACTIONS_TABLE");
     const dateColumn = this.configService.getOrThrow<string>("APP_TRANSACTION_DATE_COLUMN");
 
@@ -139,14 +167,10 @@ export class DashboardRepository {
         .lte(dateColumn, range.to)
     );
 
-    if (error) {
-      throw new InternalServerErrorException(`Failed to load dashboard transactions: ${error.message}`);
-    }
-
-    return data ?? [];
+    return this.resolveRowsOrThrow(data, error, "Failed to load dashboard transactions");
   }
 
-  private async fetchCashbookEntries(range: DateRangeInput) {
+  private async fetchCashbookEntries(range: DateRangeInput): Promise<DashboardRow[]> {
     const tableName = this.configService.getOrThrow<string>("APP_CASHBOOK_TABLE");
     const dateColumn = this.configService.getOrThrow<string>("APP_CASHBOOK_DATE_COLUMN");
 
@@ -158,21 +182,13 @@ export class DashboardRepository {
         .lte(dateColumn, range.to)
     );
 
-    if (error) {
-      throw new InternalServerErrorException(`Failed to load dashboard cashbook entries: ${error.message}`);
-    }
-
-    return data ?? [];
+    return this.resolveRowsOrThrow(data, error, "Failed to load dashboard cashbook entries");
   }
 
-  private async fetchProducts() {
+  private async fetchProducts(): Promise<DashboardRow[]> {
     const tableName = this.configService.getOrThrow<string>("APP_PRODUCTS_TABLE");
     const { data, error } = await this.supabaseAdminService.client.from(tableName).select("*");
 
-    if (error) {
-      throw new InternalServerErrorException(`Failed to load dashboard products: ${error.message}`);
-    }
-
-    return data ?? [];
+    return this.resolveRowsOrThrow(data, error, "Failed to load dashboard products");
   }
 }

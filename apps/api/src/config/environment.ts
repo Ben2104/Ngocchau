@@ -15,7 +15,7 @@ export const environmentSchema = z.object({
   SUPABASE_JWKS_URL: z.string().url(),
   SUPABASE_STORAGE_BUCKET_EXCEL_IMPORTS: z.string().default("excel-imports"),
 
-  APP_PROFILE_TABLES: z.string().default("users,profiles"),
+  APP_PROFILE_TABLES: z.string().default("users"),
   APP_PROFILE_USER_ID_COLUMN: z.string().default("user_id"),
   APP_PROFILE_ROLE_COLUMN: z.string().default("role"),
   APP_PROFILE_STATUS_COLUMN: z.string().default("status"),
@@ -48,4 +48,3 @@ export type EnvironmentVariables = z.infer<typeof environmentSchema>;
 export function validateEnvironment(config: Record<string, unknown>) {
   return environmentSchema.parse(config);
 }
-

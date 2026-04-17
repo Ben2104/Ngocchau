@@ -14,7 +14,12 @@ export class AuthService {
 
   async authenticateToken(accessToken: string): Promise<AuthenticatedUser> {
     const payload = await this.jwtVerifierService.verifyAccessToken(accessToken);
-    const user = await this.userProfileRepository.findBySupabaseUserId(payload.sub, payload.email ?? "");
+    const email = payload.email?.trim().toLowerCase() ?? "";
+    let user = await this.userProfileRepository.findBySupabaseUserId(payload.sub, email);
+
+    if (!user) {
+      user = await this.userProfileRepository.bootstrapOwnerProfile(payload.sub);
+    }
 
     if (!user) {
       throw new UnauthorizedException("No application profile found for this Supabase user");
@@ -34,4 +39,3 @@ export class AuthService {
     };
   }
 }
-

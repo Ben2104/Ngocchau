@@ -1,4 +1,5 @@
 export const APP_ROLES = ["owner", "manager", "staff", "accountant"] as const;
+export const EMPLOYEE_ASSIGNABLE_ROLES = ["manager", "staff", "accountant"] as const;
 export const PRIMARY_ROUTE_KEYS = ["dashboard", "importExcel", "importHistory", "employees", "settings"] as const;
 export const NAV_ICON_KEYS = ["dashboard", "upload", "history", "users", "settings"] as const;
 export const BADGE_TONES = ["neutral", "success", "warning", "danger", "accent", "info"] as const;
@@ -19,6 +20,7 @@ export const IMPORT_ACTION_STATES = [
 export const SORT_DIRECTIONS = ["asc", "desc"] as const;
 
 export type AppRole = (typeof APP_ROLES)[number];
+export type EmployeeAssignableRole = (typeof EMPLOYEE_ASSIGNABLE_ROLES)[number];
 export type PrimaryRouteKey = (typeof PRIMARY_ROUTE_KEYS)[number];
 export type NavIconKey = (typeof NAV_ICON_KEYS)[number];
 export type BadgeTone = (typeof BADGE_TONES)[number];
@@ -308,7 +310,6 @@ export interface EmployeeListItem {
   profile: DisplayPerson;
   role: AppRole;
   joinedAt: string;
-  canEditRole: boolean;
 }
 
 export interface EmployeeListParams extends SearchableParams {
@@ -317,6 +318,7 @@ export interface EmployeeListParams extends SearchableParams {
 
 export interface EmployeePermissionSet {
   canCreateEmployee: boolean;
+  canDeleteEmployee: boolean;
   canEditRoles: boolean;
   canViewSecurityPolicy: boolean;
 }
@@ -330,4 +332,8 @@ export interface EmployeeSecurityNotice {
 export interface EmployeeDirectoryResponse {
   items: EmployeeListItem[];
   note?: string;
+}
+
+export interface EmployeeDeleteResult {
+  id: string;
 }

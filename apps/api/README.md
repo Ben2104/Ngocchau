@@ -13,7 +13,11 @@ NestJS API responsible for business rules, validation, reporting, Excel import, 
 
 ## Local Commands
 
-- `pnpm --filter @gold-shop/api start:dev`
+- `pnpm dev:api`
 - `pnpm --filter @gold-shop/api build`
 - `pnpm --filter @gold-shop/api typecheck`
 
+Notes:
+
+- `pnpm dev:api` bootstraps the required workspace runtime packages before starting the API compiler/runtime loop.
+- `pnpm dev` remains the normal full-stack command and still runs shared package watchers through Turbo.

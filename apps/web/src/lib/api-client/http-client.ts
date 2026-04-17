@@ -58,10 +58,13 @@ export const httpClient = {
       method: "POST",
       body: body instanceof FormData ? body : JSON.stringify(body)
     }),
+  delete: <T>(path: string) =>
+    apiRequest<T>(path, {
+      method: "DELETE"
+    }),
   patch: <T>(path: string, body: unknown) =>
     apiRequest<T>(path, {
       method: "PATCH",
       body: JSON.stringify(body)
     })
 };
-

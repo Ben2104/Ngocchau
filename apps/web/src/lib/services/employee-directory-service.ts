@@ -1,15 +1,19 @@
 import { EMPLOYEE_DIRECTORY_PAGE_SIZE, ROLE_LABELS } from "@gold-shop/constants";
-import type { EmployeeDirectoryResponse, EmployeeListItem, EmployeeListParams } from "@gold-shop/types";
+import type {
+  EmployeeDeleteResult,
+  EmployeeDirectoryResponse,
+  EmployeeListItem,
+  EmployeeListParams
+} from "@gold-shop/types";
+import type { EmployeeCreateInput } from "@gold-shop/validation";
 
 import { httpClient } from "@/lib/api-client/http-client";
-import { employeeDirectoryMock } from "@/lib/mocks/employees";
 
 export interface EmployeeDirectoryQueryResult {
   items: EmployeeListItem[];
   totalItems: number;
   totalPages: number;
   note?: string;
-  usesMockData: boolean;
 }
 
 function sortEmployees(items: EmployeeListItem[], params: EmployeeListParams) {
@@ -45,25 +49,8 @@ function filterEmployees(items: EmployeeListItem[], params: EmployeeListParams) 
 }
 
 export async function getEmployeeDirectory(params: EmployeeListParams): Promise<EmployeeDirectoryQueryResult> {
-  let sourceItems = employeeDirectoryMock;
-  let note = "Đang dùng mock directory để hoàn thiện shell trước khi backend nhân sự trả dữ liệu thật.";
-  let usesMockData = true;
-
-  try {
-    const response = await httpClient.get<EmployeeDirectoryResponse>("/employees");
-
-    if (response.items.length > 0) {
-      sourceItems = response.items;
-      usesMockData = false;
-      note = response.note ?? note;
-    } else if (response.note) {
-      note = response.note;
-    }
-  } catch {
-    note = "Không thể tải danh sách nhân viên từ API. Màn hình đang hiển thị mock fallback cùng data contract thật.";
-  }
-
-  const filteredItems = filterEmployees(sourceItems, params);
+  const response = await httpClient.get<EmployeeDirectoryResponse>("/employees");
+  const filteredItems = filterEmployees(response.items, params);
   const sortedItems = sortEmployees(filteredItems, params);
   const pageSize = params.pageSize || EMPLOYEE_DIRECTORY_PAGE_SIZE;
   const totalPages = Math.max(1, Math.ceil(sortedItems.length / pageSize));
@@ -74,7 +61,14 @@ export async function getEmployeeDirectory(params: EmployeeListParams): Promise<
     items: sortedItems.slice(startIndex, startIndex + pageSize),
     totalItems: sortedItems.length,
     totalPages,
-    note,
-    usesMockData
+    note: response.note
   };
+}
+
+export function createEmployee(input: EmployeeCreateInput) {
+  return httpClient.post<EmployeeListItem>("/employees", input);
+}
+
+export function deleteEmployee(id: string) {
+  return httpClient.delete<EmployeeDeleteResult>(`/employees/${id}`);
 }

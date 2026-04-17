@@ -32,21 +32,25 @@ export const ROLE_TONES: Record<AppRole, BadgeTone> = {
 export const ROLE_PERMISSION_MAP: Record<AppRole, EmployeePermissionSet> = {
   owner: {
     canCreateEmployee: true,
+    canDeleteEmployee: true,
     canEditRoles: true,
     canViewSecurityPolicy: true
   },
   manager: {
-    canCreateEmployee: true,
+    canCreateEmployee: false,
+    canDeleteEmployee: false,
     canEditRoles: false,
     canViewSecurityPolicy: true
   },
   accountant: {
     canCreateEmployee: false,
+    canDeleteEmployee: false,
     canEditRoles: false,
     canViewSecurityPolicy: false
   },
   staff: {
     canCreateEmployee: false,
+    canDeleteEmployee: false,
     canEditRoles: false,
     canViewSecurityPolicy: false
   }
@@ -135,6 +139,7 @@ export const QUERY_KEYS = {
 export const AUDIT_MODULES = {
   auth: "auth",
   dashboard: "dashboard",
+  employees: "employees",
   transactions: "transactions",
   cashbook: "cashbook",
   inventory: "inventory",

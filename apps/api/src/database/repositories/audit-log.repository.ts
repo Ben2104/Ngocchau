@@ -57,7 +57,8 @@ export class AuditLogRepository {
       throw new InternalServerErrorException(`Failed to read audit logs: ${error.message}`);
     }
 
-    return (data ?? []).map((row) => mapAuditLogRow(row as Record<string, unknown>));
+    const rows = (data ?? []) as Array<Record<string, unknown>>;
+
+    return rows.map(mapAuditLogRow);
   }
 }
-

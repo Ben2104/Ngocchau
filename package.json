@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "dev": "turbo run dev --parallel",
+    "dev": "pnpm --filter @gold-shop/api build && turbo run dev --parallel",
     "build": "turbo run build",
     "build:web": "turbo run build --filter=@gold-shop/web...",
     "lint": "turbo run lint",

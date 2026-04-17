@@ -4,10 +4,10 @@
     "module": "CommonJS",
     "declaration": true,
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "paths": {}
   },
   "include": [
     "src/**/*"
   ]
 }
-

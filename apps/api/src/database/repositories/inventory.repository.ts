@@ -39,7 +39,8 @@ export class InventoryRepository {
       throw new InternalServerErrorException(`Failed to read inventory rows: ${error.message}`);
     }
 
-    return (data ?? []).map((row) => mapInventoryRow(row as Record<string, unknown>));
+    const rows = (data ?? []) as Array<Record<string, unknown>>;
+
+    return rows.map(mapInventoryRow);
   }
 }
-
