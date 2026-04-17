@@ -42,7 +42,9 @@ export class CashbookRepository {
       throw new InternalServerErrorException(`Failed to read cashbook entries: ${error.message}`);
     }
 
-    return (data ?? []).map((row) => mapCashbookRow(row as Record<string, unknown>));
+    const rows = (data ?? []) as Array<Record<string, unknown>>;
+
+    return rows.map(mapCashbookRow);
   }
 
   async create(input: CashbookCreateInput, actor: AuthenticatedUser): Promise<CashbookEntry> {
@@ -66,4 +68,3 @@ export class CashbookRepository {
     return mapCashbookRow(data);
   }
 }
-

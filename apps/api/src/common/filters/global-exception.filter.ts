@@ -5,18 +5,23 @@ import {
   HttpException,
   HttpStatus
 } from "@nestjs/common";
-import type { Response } from "express";
 import { ZodError } from "zod";
 
 import type { RequestWithContext } from "../dto/request-context.type";
 import { formatZodError } from "../utils/zod-error.util";
+
+type HttpErrorResponse = {
+  status(statusCode: number): {
+    json(payload: unknown): void;
+  };
+};
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const context = host.switchToHttp();
     const request = context.getRequest<RequestWithContext>();
-    const response = context.getResponse<Response>();
+    const response = context.getResponse<HttpErrorResponse>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = "Internal server error";
@@ -65,4 +70,3 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     });
   }
 }
-

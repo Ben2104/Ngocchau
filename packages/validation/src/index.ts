@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { APP_ROLES } from "@gold-shop/types";
+import { APP_ROLES, EMPLOYEE_ASSIGNABLE_ROLES } from "@gold-shop/types";
 
 const isoDate = z.string().datetime().or(z.string().date());
 
@@ -67,6 +67,13 @@ export const RoleAssignmentSchema = z.object({
   role: z.enum(APP_ROLES)
 });
 
+export const EmployeeCreateSchema = z.object({
+  fullName: z.string().min(1, "Họ và tên là bắt buộc"),
+  email: z.string().email("Email không hợp lệ"),
+  password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự"),
+  role: z.enum(EMPLOYEE_ASSIGNABLE_ROLES)
+});
+
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type DashboardRangeQueryInput = z.infer<typeof DashboardRangeQuerySchema>;
 export type TransactionCreateInput = z.infer<typeof TransactionCreateSchema>;
@@ -76,4 +83,4 @@ export type InventoryAdjustmentInput = z.infer<typeof InventoryAdjustmentSchema>
 export type ExcelImportRowInput = z.infer<typeof ExcelImportRowSchema>;
 export type ExcelImportValidateInput = z.infer<typeof ExcelImportValidateSchema>;
 export type ExcelImportCommitInput = z.infer<typeof ExcelImportCommitSchema>;
-
+export type EmployeeCreateInput = z.infer<typeof EmployeeCreateSchema>;

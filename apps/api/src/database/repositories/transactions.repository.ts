@@ -62,7 +62,9 @@ export class TransactionsRepository {
       throw new InternalServerErrorException(`Failed to read transactions: ${error.message}`);
     }
 
-    return (data ?? []).map((row) => mapTransactionRow(row as Record<string, unknown>));
+    const rows = (data ?? []) as Array<Record<string, unknown>>;
+
+    return rows.map(mapTransactionRow);
   }
 
   async create(input: TransactionCreateInput, actor: AuthenticatedUser): Promise<TransactionRecord> {
@@ -117,4 +119,3 @@ export class TransactionsRepository {
     return mapTransactionRow(data);
   }
 }
-
