@@ -12,9 +12,6 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
       "@gold-shop/types": [
         "../../packages/types/src/index.ts"
       ],
@@ -32,6 +29,9 @@
       ],
       "@gold-shop/ui/*": [
         "../../packages/ui/src/*"
+      ],
+      "@/*": [
+        "./src/*"
       ]
     },
     "allowJs": true,

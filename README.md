@@ -46,6 +46,8 @@ docs/
    - `pnpm dev:web`
    - `pnpm dev:api`
 
+For the day-to-day local workflow, command examples, and troubleshooting, use [docs/run-app.md](docs/run-app.md).
+
 ## Supabase Notes
 
 - The scaffold assumes `auth.users` already exists and user-role mapping is available through `public.users` or `public.profiles`.
@@ -110,8 +112,10 @@ pnpm vercel:projects
 pnpm vercel:run -- link
 ```
 
-5. In the Vercel project settings, confirm the repo is imported from the repository root and the Root Directory is `apps/web`.
-6. Deploy production:
+5. In the Vercel project settings, set the Root Directory to `apps/web` and enable `Include files outside the root directory in the Build Step` so shared workspace packages under `packages/*` are available during the build.
+6. Turn off the Build Command override and let the `apps/web` package use its default `build` script. If you keep an explicit install override, use `pnpm install --frozen-lockfile`.
+7. Turn off Vercel Git auto-deploy for production so push events do not start a second deploy outside GitHub Actions.
+8. Deploy production:
 
 ```bash
 pnpm vercel:deploy:web
@@ -119,6 +123,9 @@ pnpm vercel:deploy:web
 
 - The wrapper script appends `--token` automatically from `VERCEL_TOKEN`.
 - `.vercel/` is ignored so local project linkage does not get committed.
+- The Vercel project should build from `apps/web`, but it must also include files outside the root directory during the build so workspace packages under `packages/*` remain accessible.
+- Do not keep a `buildCommand` override in `vercel.json`; preview deployments should use the Vercel project settings for `apps/web`.
+- If Vercel Git auto-deploy stays enabled, Vercel can start a parallel production build on push before `.github/workflows/deploy.yml` runs.
 - Backend runtime still depends on a valid `SUPABASE_SERVICE_ROLE_KEY` in `apps/api/.env`.
 
 ## GitHub Actions CI/CD
@@ -132,7 +139,8 @@ Deployment behavior:
 
 - Pull requests run CI only and never trigger production deploys.
 - Pushes to `main` run CI first.
-- After CI passes on `main`, the deploy workflow checks the changed paths.
+- After CI passes on `main`, the deploy workflow checks the changed paths and performs the production deploys.
+- Web production deploy should be owned by `deploy.yml`; disable Vercel Git auto-deploy so Vercel does not run a second production deployment in parallel.
 - Web-only changes deploy `apps/web` to Vercel.
 - API-only changes deploy `apps/api` to Railway.
 - Shared package changes can deploy both targets.

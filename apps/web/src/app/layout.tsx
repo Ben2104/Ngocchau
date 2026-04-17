@@ -1,16 +1,9 @@
 import type { Metadata } from "next";
-import { Be_Vietnam_Pro } from "next/font/google";
 
 import { publicEnv } from "@/lib/utils/env";
 import { AppProviders } from "@/providers/app-providers";
 
 import "./globals.css";
-
-const beVietnamPro = Be_Vietnam_Pro({
-  weight: ["400", "500", "600"],
-  subsets: ["latin", "vietnamese"],
-  variable: "--font-be-vietnam"
-});
 
 export const metadata: Metadata = {
   title: `${publicEnv.appName} | Dashboard`,
@@ -19,8 +12,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" className={beVietnamPro.variable}>
-      <body className={beVietnamPro.className}>
+    <html lang="vi">
+      <body style={{ fontFamily: '"Be Vietnam Pro", system-ui, sans-serif' }}>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
