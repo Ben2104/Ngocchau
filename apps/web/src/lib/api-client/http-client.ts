@@ -3,6 +3,18 @@ import type { ApiResponse } from "@gold-shop/types";
 import { getBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { publicEnv } from "@/lib/utils/env";
 
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly code?: string,
+    public readonly details?: unknown
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
+}
+
 function buildUrl(path: string): string {
   const baseUrl = publicEnv.apiBaseUrl.replace(/\/$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
@@ -22,7 +34,12 @@ async function parseJson<T>(response: Response): Promise<ApiResponse<T>> {
   const payload = (await response.json()) as ApiResponse<T>;
 
   if (!response.ok || !payload.success) {
-    throw new Error(payload.message || "Không thể xử lý yêu cầu");
+    throw new ApiRequestError(
+      payload.message || "Không thể xử lý yêu cầu",
+      response.status,
+      payload.error?.code,
+      payload.error?.details
+    );
   }
 
   return payload;

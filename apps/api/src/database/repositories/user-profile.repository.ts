@@ -1,14 +1,12 @@
 import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
+import { APP_ERROR_CODES } from "@gold-shop/constants";
 import { APP_ROLES, type AppRole, type AuthenticatedUser } from "@gold-shop/types";
 
+import { AppSetupException } from "../../common/exceptions/app-setup.exception";
+import { isMissingTableError } from "../../common/utils/supabase-error.util";
 import { SupabaseAdminService } from "../../integrations/supabase/supabase-admin.service";
-
-type SupabaseQueryError = {
-  code?: string;
-  message?: string;
-} | null;
 
 type SupabaseAuthUser = {
   id: string;
@@ -35,10 +33,6 @@ function resolveFullName(data: { email?: string | null; user_metadata?: Record<s
   return typeof metadataName === "string" && metadataName.trim() !== "" ? metadataName.trim() : "Người dùng nội bộ";
 }
 
-function isMissingTableError(error: SupabaseQueryError) {
-  return error?.code === "42P01" || error?.code === "PGRST205";
-}
-
 @Injectable()
 export class UserProfileRepository {
   constructor(
@@ -56,6 +50,17 @@ export class UserProfileRepository {
       .split(",")
       .map((tableName) => tableName.trim())
       .filter(Boolean);
+  }
+
+  private throwMissingProfileTable(tableName: string, providerCode?: string | null): never {
+    throw new AppSetupException(
+      "Bảng hồ sơ nhân viên chưa được khởi tạo trên Supabase project này. Cần tạo bảng public.users trước khi xác thực vai trò nội bộ.",
+      APP_ERROR_CODES.employeeProfileTableMissing,
+      {
+        tableName,
+        providerCode: providerCode ?? null
+      }
+    );
   }
 
   private mapProfileRow(data: Record<string, unknown>, supabaseUserId: string, email: string): AuthenticatedUser {
@@ -151,6 +156,10 @@ export class UserProfileRepository {
         return authUser ? this.buildDevelopmentProfile(authUser) : null;
       }
 
+      if (isMissingTableError(countError)) {
+        this.throwMissingProfileTable(tableName, countError.code);
+      }
+
       throw new InternalServerErrorException(
         `Failed to verify application profiles in table "${tableName}": ${countError.message}`
       );
@@ -192,6 +201,10 @@ export class UserProfileRepository {
 
       if (this.isDevelopment && isMissingTableError(error)) {
         return this.buildDevelopmentProfile(authUser);
+      }
+
+      if (isMissingTableError(error)) {
+        this.throwMissingProfileTable(tableName, error.code);
       }
 
       throw new InternalServerErrorException(`Failed to bootstrap owner profile: ${error?.message ?? "unknown"}`);

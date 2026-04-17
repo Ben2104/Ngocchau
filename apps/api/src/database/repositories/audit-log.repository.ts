@@ -1,8 +1,11 @@
 import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
+import { APP_ERROR_CODES } from "@gold-shop/constants";
 import type { AuditLogRecord, AuthenticatedUser } from "@gold-shop/types";
 
+import { AppSetupException } from "../../common/exceptions/app-setup.exception";
+import { isMissingTableError } from "../../common/utils/supabase-error.util";
 import { SupabaseAdminService } from "../../integrations/supabase/supabase-admin.service";
 import { mapAuditLogRow } from "../mappers/audit-log.mapper";
 
@@ -22,6 +25,17 @@ export class AuditLogRepository {
     private readonly supabaseAdminService: SupabaseAdminService
   ) {}
 
+  private throwMissingAuditTable(tableName: string, providerCode?: string | null): never {
+    throw new AppSetupException(
+      "Bảng nhật ký thao tác chưa được khởi tạo trên Supabase project này. Cần tạo bảng public.audit_logs trước khi ghi nhận thao tác nhân viên.",
+      APP_ERROR_CODES.auditLogTableMissing,
+      {
+        tableName,
+        providerCode: providerCode ?? null
+      }
+    );
+  }
+
   async insert(input: AuditLogInsertInput): Promise<AuditLogRecord> {
     const tableName = this.configService.getOrThrow<string>("APP_AUDIT_LOGS_TABLE");
     const { data, error } = await this.supabaseAdminService.client
@@ -39,6 +53,10 @@ export class AuditLogRepository {
       .single<Record<string, unknown>>();
 
     if (error || !data) {
+      if (isMissingTableError(error)) {
+        this.throwMissingAuditTable(tableName, error.code);
+      }
+
       throw new InternalServerErrorException(`Failed to insert audit log: ${error?.message ?? "unknown"}`);
     }
 
@@ -54,6 +72,10 @@ export class AuditLogRepository {
       .limit(limit);
 
     if (error) {
+      if (isMissingTableError(error)) {
+        this.throwMissingAuditTable(tableName, error.code);
+      }
+
       throw new InternalServerErrorException(`Failed to read audit logs: ${error.message}`);
     }
 

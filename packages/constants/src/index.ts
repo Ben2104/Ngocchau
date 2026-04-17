@@ -157,3 +157,8 @@ export const AUDIT_ACTIONS = {
   upload: "upload",
   read: "read"
 } as const;
+
+export const APP_ERROR_CODES = {
+  employeeProfileTableMissing: "EMPLOYEE_PROFILE_TABLE_MISSING",
+  auditLogTableMissing: "AUDIT_LOG_TABLE_MISSING"
+} as const;

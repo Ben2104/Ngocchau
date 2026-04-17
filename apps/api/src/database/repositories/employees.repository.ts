@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
+import { APP_ERROR_CODES } from "@gold-shop/constants";
 import {
   APP_ROLES,
   type AppRole,
@@ -11,6 +12,8 @@ import {
 import type { EmployeeCreateInput } from "@gold-shop/validation";
 import { getInitials } from "@gold-shop/utils";
 
+import { AppSetupException } from "../../common/exceptions/app-setup.exception";
+import { isMissingTableError, type SupabaseQueryError } from "../../common/utils/supabase-error.util";
 import { SupabaseAdminService } from "../../integrations/supabase/supabase-admin.service";
 
 function normalizeRole(value: unknown): AppRole {
@@ -56,6 +59,17 @@ export class EmployeesRepository {
     return this.configService.getOrThrow<string>("APP_PROFILE_TABLES").split(",")[0]?.trim() || "users";
   }
 
+  private throwMissingProfileTable(error: SupabaseQueryError): never {
+    throw new AppSetupException(
+      "Bảng hồ sơ nhân viên chưa được khởi tạo trên Supabase project này. Cần tạo bảng public.users trước khi quản lý nhân viên.",
+      APP_ERROR_CODES.employeeProfileTableMissing,
+      {
+        tableName: this.tableName,
+        providerCode: error?.code ?? null
+      }
+    );
+  }
+
   async list(): Promise<EmployeeListItem[]> {
     const { data, error } = await this.supabaseAdminService.client
       .from(this.tableName)
@@ -64,6 +78,10 @@ export class EmployeesRepository {
       .order("joined_at", { ascending: false });
 
     if (error) {
+      if (isMissingTableError(error)) {
+        this.throwMissingProfileTable(error);
+      }
+
       throw new InternalServerErrorException(`Failed to read employees: ${error.message}`);
     }
 
@@ -124,6 +142,10 @@ export class EmployeesRepository {
         );
       }
 
+      if (isMissingTableError(error)) {
+        this.throwMissingProfileTable(error);
+      }
+
       if (error?.message.toLowerCase().includes("duplicate") || error?.code === "23505") {
         throw new ConflictException("Email này đã tồn tại trong hồ sơ nhân viên");
       }
@@ -142,6 +164,10 @@ export class EmployeesRepository {
       .maybeSingle<EmployeeRow>();
 
     if (error) {
+      if (isMissingTableError(error)) {
+        this.throwMissingProfileTable(error);
+      }
+
       throw new InternalServerErrorException(`Failed to load employee profile: ${error.message}`);
     }
 
@@ -171,6 +197,10 @@ export class EmployeesRepository {
       .single<{ id: string }>();
 
     if (deleteProfileError || !deletedProfile) {
+      if (isMissingTableError(deleteProfileError)) {
+        this.throwMissingProfileTable(deleteProfileError);
+      }
+
       throw new InternalServerErrorException(
         `Failed to delete employee profile: ${deleteProfileError?.message ?? "unknown"}`
       );

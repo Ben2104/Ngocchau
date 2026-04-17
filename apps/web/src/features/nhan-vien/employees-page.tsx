@@ -28,10 +28,12 @@ export function EmployeesPage() {
     totalItems,
     totalPages,
     feedback,
+    setupIssue,
     permissions,
     isLoading,
     isError,
     errorMessage,
+    isCreateBlocked,
     isCreateFormOpen,
     createForm,
     isCreating,
@@ -59,7 +61,12 @@ export function EmployeesPage() {
           description="Chủ cửa hàng chủ động cấp email, mật khẩu và vai trò cho từng nhân viên. Danh sách bên dưới lấy trực tiếp từ tài khoản nội bộ đã lưu trong hệ thống."
           actions={
             permissions.canCreateEmployee ? (
-              <Button type="button" onClick={toggleCreateForm} variant={isCreateFormOpen ? "outline" : "default"}>
+              <Button
+                type="button"
+                onClick={toggleCreateForm}
+                variant={isCreateFormOpen ? "outline" : "default"}
+                disabled={isCreateBlocked}
+              >
                 <UserPlus className="h-4 w-4" />
                 {isCreateFormOpen ? "Ẩn biểu mẫu" : "Thêm nhân viên"}
               </Button>
@@ -69,7 +76,14 @@ export function EmployeesPage() {
           }
         />
 
-        {feedback ? (
+        {setupIssue ? (
+          <InfoBanner
+            tone="danger"
+            icon={<Trash2 className="h-4 w-4" />}
+            title="Cần khởi tạo bảng nhân sự trên Supabase"
+            description={setupIssue.message}
+          />
+        ) : feedback ? (
           <InfoBanner
             tone={feedback.tone === "success" ? "success" : "danger"}
             icon={feedback.tone === "success" ? <UsersRound className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
@@ -124,6 +138,7 @@ export function EmployeesPage() {
                       value={createForm.fullName}
                       onChange={(event) => updateCreateField("fullName", event.target.value)}
                       placeholder="Ví dụ: Trần Hải Yến"
+                      disabled={isCreating || isCreateBlocked}
                     />
                   </div>
 
@@ -135,6 +150,7 @@ export function EmployeesPage() {
                       value={createForm.email}
                       onChange={(event) => updateCreateField("email", event.target.value)}
                       placeholder="nhanvien@ngocchau.vn"
+                      disabled={isCreating || isCreateBlocked}
                     />
                   </div>
 
@@ -144,6 +160,7 @@ export function EmployeesPage() {
                       id="employee-role"
                       value={createForm.role}
                       onChange={(event) => updateCreateField("role", event.target.value)}
+                      disabled={isCreating || isCreateBlocked}
                       className="flex h-12 w-full rounded-xl border border-transparent bg-stone-100 px-4 py-3 text-sm text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
                     >
                       {EMPLOYEE_ASSIGNABLE_ROLES.map((role) => (
@@ -162,6 +179,7 @@ export function EmployeesPage() {
                       value={createForm.password}
                       onChange={(event) => updateCreateField("password", event.target.value)}
                       placeholder="Tối thiểu 8 ký tự"
+                      disabled={isCreating || isCreateBlocked}
                     />
                   </div>
 
@@ -173,12 +191,13 @@ export function EmployeesPage() {
                       value={createForm.confirmPassword}
                       onChange={(event) => updateCreateField("confirmPassword", event.target.value)}
                       placeholder="Nhập lại mật khẩu đã cấp"
+                      disabled={isCreating || isCreateBlocked}
                     />
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  <Button type="submit" disabled={isCreating}>
+                  <Button type="submit" disabled={isCreating || isCreateBlocked}>
                     {isCreating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
                     {isCreating ? "Đang tạo tài khoản" : "Tạo tài khoản"}
                   </Button>

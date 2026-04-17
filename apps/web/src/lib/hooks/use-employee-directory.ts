@@ -2,11 +2,12 @@
 
 import { useDeferredValue, useState } from "react";
 
-import { EMPLOYEE_DIRECTORY_PAGE_SIZE, QUERY_KEYS } from "@gold-shop/constants";
+import { APP_ERROR_CODES, EMPLOYEE_DIRECTORY_PAGE_SIZE, QUERY_KEYS } from "@gold-shop/constants";
 import type { AppRole, EmployeeAssignableRole, EmployeeListItem, EmployeeListParams } from "@gold-shop/types";
 import { EmployeeCreateSchema } from "@gold-shop/validation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { ApiRequestError } from "@/lib/api-client/http-client";
 import {
   createEmployee,
   deleteEmployee,
@@ -33,6 +34,29 @@ const defaultCreateForm = {
 
 function resolveErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message.trim() !== "" ? error.message : fallback;
+}
+
+type EmployeeSetupIssue = {
+  code: string;
+  message: string;
+};
+
+function resolveSetupIssue(error: unknown): EmployeeSetupIssue | null {
+  if (!(error instanceof ApiRequestError) || !error.code) {
+    return null;
+  }
+
+  if (
+    error.code !== APP_ERROR_CODES.employeeProfileTableMissing &&
+    error.code !== APP_ERROR_CODES.auditLogTableMissing
+  ) {
+    return null;
+  }
+
+  return {
+    code: error.code,
+    message: error.message
+  };
 }
 
 export function useEmployeeDirectory() {
@@ -66,6 +90,11 @@ export function useEmployeeDirectory() {
       await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.employees });
     },
     onError: (error) => {
+      if (resolveSetupIssue(error)) {
+        setFeedback(null);
+        return;
+      }
+
       setFeedback({
         tone: "error",
         message: resolveErrorMessage(error, "Không thể tạo tài khoản nhân viên")
@@ -84,12 +113,22 @@ export function useEmployeeDirectory() {
       await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.employees });
     },
     onError: (error) => {
+      if (resolveSetupIssue(error)) {
+        setFeedback(null);
+        return;
+      }
+
       setFeedback({
         tone: "error",
         message: resolveErrorMessage(error, "Không thể xóa tài khoản nhân viên")
       });
     }
   });
+
+  const setupIssue =
+    resolveSetupIssue(directoryQuery.error) ??
+    resolveSetupIssue(createMutation.error) ??
+    resolveSetupIssue(deleteMutation.error);
 
   function updateSearch(search: string) {
     setParams((current) => ({
@@ -129,6 +168,10 @@ export function useEmployeeDirectory() {
   async function submitCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFeedback(null);
+
+    if (setupIssue) {
+      return;
+    }
 
     if (createForm.password !== createForm.confirmPassword) {
       setFeedback({
@@ -183,12 +226,14 @@ export function useEmployeeDirectory() {
     totalPages: directoryQuery.data?.totalPages ?? 1,
     note: directoryQuery.data?.note,
     feedback,
+    setupIssue,
     permissions: currentUser.permissions,
     isLoading: directoryQuery.isLoading,
-    isError: directoryQuery.isError,
+    isError: directoryQuery.isError && !setupIssue,
     errorMessage: directoryQuery.error
       ? resolveErrorMessage(directoryQuery.error, "Không thể tải danh sách nhân viên")
       : null,
+    isCreateBlocked: Boolean(setupIssue),
     isCreateFormOpen,
     createForm,
     isCreating: createMutation.isPending,

@@ -6,6 +6,10 @@ export const environmentSchema = z.object({
   APP_NAME: z.string().default("Gold Shop System API"),
   APP_TIMEZONE: z.string().default("Asia/Ho_Chi_Minh"),
   APP_ALLOWED_ORIGINS: z.string().default("http://localhost:3000"),
+  APP_SWAGGER_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
 
   SUPABASE_URL: z.string().url(),
   SUPABASE_ANON_KEY: z.string().min(1),
