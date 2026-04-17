@@ -17,3 +17,4 @@ package-lock.json
 /AGENTS.md
 .codex/*
 .env*.local
+skills-lock.json
