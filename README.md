@@ -132,7 +132,7 @@ pnpm vercel:deploy:web
 
 The repository now includes two workflows under `.github/workflows`:
 
-- `ci.yml`: runs on every pull request and on pushes to `main`, then executes `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build`.
+- `ci.yml`: runs on every pull request and on pushes to `main`, then executes `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, and a compiled backend runtime smoke test against `GET /api/v1/auth/status` using staging secrets.
 - `deploy.yml`: runs only after the `CI` workflow succeeds for a push to `main`, then deploys only the parts of the monorepo that changed.
 
 Deployment behavior:
@@ -140,10 +140,11 @@ Deployment behavior:
 - Pull requests run CI only and never trigger production deploys.
 - Pushes to `main` run CI first.
 - After CI passes on `main`, the deploy workflow checks the changed paths and performs the production deploys.
+- Production API deploy must pass a post-deploy healthcheck before any dependent web deploy is allowed to proceed.
 - Web production deploy should be owned by `deploy.yml`; disable Vercel Git auto-deploy so Vercel does not run a second production deployment in parallel.
 - Web-only changes deploy `apps/web` to Vercel.
 - API-only changes deploy `apps/api` to Railway.
-- Shared package changes can deploy both targets.
+- Shared package changes can deploy both targets, with web waiting for a healthy API when both deploy.
 - Docs-only changes still run CI, but the deploy jobs are skipped.
 
 Required GitHub Actions secrets:
@@ -151,15 +152,22 @@ Required GitHub Actions secrets:
 - `VERCEL_TOKEN`
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
+- `CI_SUPABASE_URL`
+- `CI_SUPABASE_ANON_KEY`
+- `CI_SUPABASE_SERVICE_ROLE_KEY`
+- `CI_SUPABASE_JWT_ISSUER`
+- `CI_SUPABASE_JWT_AUDIENCE`
+- `CI_SUPABASE_JWKS_URL`
 - `RAILWAY_TOKEN`
 - `RAILWAY_PROJECT_ID`
 - `RAILWAY_ENVIRONMENT`
 - `RAILWAY_SERVICE`
+- `RAILWAY_PUBLIC_API_URL`
 
 Important runtime notes:
 
-- Keep application runtime secrets and environment variables in Vercel and Railway, not in GitHub Actions.
-- The CI workflow only injects safe placeholder public env values so the Next.js build can complete.
+- Keep production runtime secrets and environment variables in Vercel and Railway. The CI workflow uses staging backend secrets only for pre-deploy runtime smoke checks.
+- The CI workflow still injects safe placeholder public env values so the Next.js build can complete.
 - Supabase migrations remain manual in this first version of the pipeline. GitHub Actions does not auto-apply schema changes.
 
 ## Current Limitation

@@ -48,13 +48,13 @@ jobs:
             [ -z "$file" ] && continue
 
             case "$file" in
-              apps/web/*|packages/constants/*|packages/types/*|packages/ui/*|packages/utils/*|packages/validation/*|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|turbo.json|tsconfig.base.json)
+              apps/web/*|packages/constants/*|packages/types/*|packages/ui/*|packages/utils/*|packages/validation/*|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|turbo.json|tsconfig.base.json|.nvmrc)
                 web=true
                 ;;
             esac
 
             case "$file" in
-              apps/api/*|packages/constants/*|packages/types/*|packages/utils/*|packages/validation/*|supabase/types/*|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|turbo.json|tsconfig.base.json|railway.json)
+              apps/api/*|packages/constants/*|packages/types/*|packages/utils/*|packages/validation/*|supabase/types/*|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|turbo.json|tsconfig.base.json|railway.json|.nvmrc)
                 api=true
                 ;;
             esac
@@ -88,8 +88,12 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   deploy-web:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.web == 'true'
+    needs:
+      - detect-changes
+      - deploy-api
+    if: >-
+      needs.detect-changes.outputs.web == 'true' &&
+      (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -147,6 +151,7 @@ jobs:
       RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
       RAILWAY_ENVIRONMENT: ${{ secrets.RAILWAY_ENVIRONMENT }}
       RAILWAY_SERVICE: ${{ secrets.RAILWAY_SERVICE }}
+      RAILWAY_PUBLIC_API_URL: ${{ secrets.RAILWAY_PUBLIC_API_URL }}
     steps:
       - name: Check out tested revision
         uses: actions/checkout@v4
@@ -170,6 +175,14 @@ jobs:
           test -n "$RAILWAY_PROJECT_ID"
           test -n "$RAILWAY_ENVIRONMENT"
           test -n "$RAILWAY_SERVICE"
+          test -n "$RAILWAY_PUBLIC_API_URL"
+
+      - name: Validate Railway config
+        shell: bash
+        run: |
+          node -e 'const config=require("./railway.json"); if (config.build?.builder !== "RAILPACK") { throw new Error("railway.json must use RAILPACK."); }'
+          node -e 'const config=require("./railway.json"); if (config.deploy?.startCommand !== "node apps/api/dist/main.js") { throw new Error("railway.json startCommand must run the compiled API directly."); }'
+          node -e 'const config=require("./railway.json"); if (config.deploy?.healthcheckPath !== "/api/v1/auth/status") { throw new Error("railway.json healthcheckPath must stay on /api/v1/auth/status."); }'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -178,3 +191,23 @@ jobs:
         shell: bash
         run: |
           pnpm dlx @railway/cli@latest up --ci --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT" --service "$RAILWAY_SERVICE"
+
+      - name: Smoke test Railway production API
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          health_url="${RAILWAY_PUBLIC_API_URL%/}/api/v1/auth/status"
+
+          for attempt in {1..18}; do
+            if curl --fail --silent --show-error "$health_url" > railway-health.json; then
+              echo "Railway production healthcheck passed on attempt ${attempt}."
+              cat railway-health.json
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "Railway production healthcheck failed after deploy."
+          exit 1
