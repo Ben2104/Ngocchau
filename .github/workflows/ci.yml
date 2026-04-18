@@ -131,9 +131,6 @@ jobs:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_pMEes6MqbGDgpbwfiZJuiA_AweZeoQS
       NEXT_PUBLIC_APP_NAME: Gold Shop System
       NEXT_PUBLIC_DEFAULT_TIMEZONE: Asia/Ho_Chi_Minh
-      CI_SUPABASE_URL: ${{ secrets.CI_SUPABASE_URL }}
-      CI_SUPABASE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY }}
-      CI_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -147,13 +144,6 @@ jobs:
           node-version: 20
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Validate backend smoke secrets
-        shell: bash
-        run: |
-          test -n "$CI_SUPABASE_URL"
-          test -n "$CI_SUPABASE_ANON_KEY"
-          test -n "$CI_SUPABASE_SERVICE_ROLE_KEY"
 
       - name: Prepare backend smoke environment
         shell: bash
@@ -219,8 +209,7 @@ jobs:
       - detect-changes
       - backend-runtime-smoke
     if: >-
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       needs.detect-changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     environment:
@@ -274,8 +263,7 @@ jobs:
       - detect-changes
       - deploy-api
     if: >-
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       needs.detect-changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     environment:
@@ -315,10 +303,8 @@ jobs:
       - deploy-api
       - railway-production-smoke
     if: >-
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      needs.detect-changes.outputs.web == 'true' &&
-      (
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.detect-changes.outputs.web == 'true' && (
         needs.detect-changes.outputs.api != 'true' ||
         (
           needs.deploy-api.result == 'success' &&
