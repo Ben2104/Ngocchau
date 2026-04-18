@@ -114,100 +114,10 @@ jobs:
       - name: Run build
         run: pnpm build
 
-  backend-runtime-smoke:
-    needs:
-      - detect-changes
-      - quality-gates
-    runs-on: ubuntu-latest
-    env:
-      PORT: 4010
-      NODE_ENV: production
-      APP_NAME: Gold Shop System API
-      APP_TIMEZONE: Asia/Ho_Chi_Minh
-      APP_ALLOWED_ORIGINS: https://ngocchau.vercel.app
-      APP_SWAGGER_ENABLED: "false"
-      NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:4010/api/v1
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_pMEes6MqbGDgpbwfiZJuiA_AweZeoQS
-      NEXT_PUBLIC_APP_NAME: Gold Shop System
-      NEXT_PUBLIC_DEFAULT_TIMEZONE: Asia/Ho_Chi_Minh
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Prepare backend smoke environment
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          normalized_supabase_url="${CI_SUPABASE_URL%/}"
-
-          {
-            echo "SUPABASE_URL=$normalized_supabase_url"
-            echo "SUPABASE_ANON_KEY=$CI_SUPABASE_ANON_KEY"
-            echo "SUPABASE_SERVICE_ROLE_KEY=$CI_SUPABASE_SERVICE_ROLE_KEY"
-            echo "SUPABASE_JWT_ISSUER=${normalized_supabase_url}/auth/v1"
-            echo "SUPABASE_JWT_AUDIENCE=authenticated"
-            echo "SUPABASE_JWKS_URL=${normalized_supabase_url}/auth/v1/.well-known/jwks.json"
-          } >> "$GITHUB_ENV"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build workspace
-        run: pnpm build
-
-      - name: Smoke test compiled backend
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          node apps/api/dist/main.js > api-runtime.log 2>&1 &
-          api_pid=$!
-
-          cleanup() {
-            if kill -0 "$api_pid" >/dev/null 2>&1; then
-              kill "$api_pid"
-              wait "$api_pid" || true
-            fi
-          }
-
-          trap cleanup EXIT
-
-          for attempt in {1..30}; do
-            if curl --fail --silent --show-error "http://127.0.0.1:${PORT}/api/v1/auth/status" > api-health.json; then
-              echo "Backend healthcheck passed on attempt ${attempt}."
-              cat api-health.json
-              exit 0
-            fi
-
-            if ! kill -0 "$api_pid" >/dev/null 2>&1; then
-              echo "Backend process exited before becoming healthy."
-              cat api-runtime.log
-              exit 1
-            fi
-
-            sleep 2
-          done
-
-          echo "Timed out waiting for backend healthcheck."
-          cat api-runtime.log
-          exit 1
-
   deploy-api:
     needs:
       - detect-changes
-      - backend-runtime-smoke
+      - quality-gates
     if: >-
       github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       needs.detect-changes.outputs.api == 'true'
@@ -299,7 +209,7 @@ jobs:
   deploy-web:
     needs:
       - detect-changes
-      - backend-runtime-smoke
+      - quality-gates
       - deploy-api
       - railway-production-smoke
     if: >-

@@ -132,7 +132,7 @@ pnpm vercel:deploy:web
 
 The repository now uses a single workflow under `.github/workflows`:
 
-- `ci.yml`: runs on every pull request and on pushes to `main`. It detects changed targets, runs `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, boots the compiled backend for a runtime smoke test against `GET /api/v1/auth/status` using staging Supabase secrets, and on `push` to `main` continues into the production deploy jobs for Railway and Vercel.
+- `ci.yml`: runs on every pull request and on pushes to `main`. It detects changed targets, runs `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build`, then on `push` to `main` continues into the production deploy jobs for Railway and Vercel.
 
 Deployment behavior:
 
@@ -151,9 +151,6 @@ Required GitHub Actions secrets:
 - `VERCEL_TOKEN`
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
-- `CI_SUPABASE_URL`
-- `CI_SUPABASE_ANON_KEY`
-- `CI_SUPABASE_SERVICE_ROLE_KEY`
 - `RAILWAY_TOKEN`
 - `RAILWAY_PROJECT_ID`
 - `RAILWAY_ENVIRONMENT`
@@ -162,8 +159,7 @@ Required GitHub Actions secrets:
 
 Important runtime notes:
 
-- Keep production runtime secrets and environment variables in Vercel and Railway. The CI workflow uses staging backend secrets only for pre-deploy runtime smoke checks.
-- The backend smoke job derives `SUPABASE_JWT_ISSUER`, `SUPABASE_JWKS_URL`, and `SUPABASE_JWT_AUDIENCE=authenticated` from `CI_SUPABASE_URL`, so those do not need separate GitHub secrets unless your Supabase setup is non-standard.
+- Keep production runtime secrets and environment variables in Vercel and Railway.
 - The CI workflow still injects safe placeholder public env values so the Next.js build can complete.
 - Supabase migrations remain manual in this first version of the pipeline. GitHub Actions does not auto-apply schema changes.
 
