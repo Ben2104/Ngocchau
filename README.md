@@ -125,25 +125,25 @@ pnpm vercel:deploy:web
 - `.vercel/` is ignored so local project linkage does not get committed.
 - The Vercel project should build from `apps/web`, but it must also include files outside the root directory during the build so workspace packages under `packages/*` remain accessible.
 - Do not keep a `buildCommand` override in `vercel.json`; preview deployments should use the Vercel project settings for `apps/web`.
-- If Vercel Git auto-deploy stays enabled, Vercel can start a parallel production build on push before `.github/workflows/deploy.yml` runs.
+- If Vercel Git auto-deploy stays enabled, Vercel can start a parallel production build on push before the GitHub Actions CI workflow reaches the production deploy jobs.
 - Backend runtime still depends on a valid `SUPABASE_SERVICE_ROLE_KEY` in `apps/api/.env`.
 
 ## GitHub Actions CI/CD
 
-The repository now includes two workflows under `.github/workflows`:
+The repository now uses a single workflow under `.github/workflows`:
 
-- `ci.yml`: runs on every pull request and on pushes to `main`, then executes `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build`.
-- `deploy.yml`: runs only after the `CI` workflow succeeds for a push to `main`, then deploys only the parts of the monorepo that changed.
+- `ci.yml`: runs on every pull request and on pushes to `main`. It detects changed targets, runs `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build`, then on `push` to `main` continues into the production deploy jobs for Railway and Vercel.
 
 Deployment behavior:
 
-- Pull requests run CI only and never trigger production deploys.
-- Pushes to `main` run CI first.
-- After CI passes on `main`, the deploy workflow checks the changed paths and performs the production deploys.
-- Web production deploy should be owned by `deploy.yml`; disable Vercel Git auto-deploy so Vercel does not run a second production deployment in parallel.
+- Pull requests run verification only and never trigger production deploys.
+- Pushes to `main` run the same CI workflow first, then continue into the production deploy jobs.
+- The workflow checks changed paths so web-only changes deploy only `apps/web`, API-only changes deploy only `apps/api`, and shared package changes can deploy both.
+- Production API deploy must pass a post-deploy Railway healthcheck before any dependent web deploy is allowed to proceed.
+- Web production deploy should be owned by `ci.yml`; disable Vercel Git auto-deploy so Vercel does not run a second production deployment in parallel.
 - Web-only changes deploy `apps/web` to Vercel.
 - API-only changes deploy `apps/api` to Railway.
-- Shared package changes can deploy both targets.
+- Shared package changes can deploy both targets, with web waiting for a healthy API when both deploy.
 - Docs-only changes still run CI, but the deploy jobs are skipped.
 
 Required GitHub Actions secrets:
@@ -155,11 +155,12 @@ Required GitHub Actions secrets:
 - `RAILWAY_PROJECT_ID`
 - `RAILWAY_ENVIRONMENT`
 - `RAILWAY_SERVICE`
+- `RAILWAY_PUBLIC_API_URL`
 
 Important runtime notes:
 
-- Keep application runtime secrets and environment variables in Vercel and Railway, not in GitHub Actions.
-- The CI workflow only injects safe placeholder public env values so the Next.js build can complete.
+- Keep production runtime secrets and environment variables in Vercel and Railway.
+- The CI workflow still injects safe placeholder public env values so the Next.js build can complete.
 - Supabase migrations remain manual in this first version of the pipeline. GitHub Actions does not auto-apply schema changes.
 
 ## Current Limitation

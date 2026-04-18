@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "pnpm --filter @gold-shop/api build && turbo run dev --parallel",
     "build": "turbo run build",

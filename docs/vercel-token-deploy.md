@@ -48,7 +48,7 @@ In the Vercel dashboard, use `apps/web` as the Root Directory, enable `Include f
 pnpm install --frozen-lockfile
 ```
 
-If GitHub Actions owns production deploys, disable Vercel Git auto-deploy for this project. Otherwise Vercel can start a separate production build on push before `ci.yml` and `deploy.yml` finish.
+If GitHub Actions owns production deploys, disable Vercel Git auto-deploy for this project. Otherwise Vercel can start a separate production build on push before the single `ci.yml` workflow reaches the production deploy jobs.
 
 ## Notes
 

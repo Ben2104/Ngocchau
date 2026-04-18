@@ -14,7 +14,7 @@
     ]
   },
   "deploy": {
-    "startCommand": "pnpm --filter @gold-shop/api start",
+    "startCommand": "node apps/api/dist/main.js",
     "healthcheckPath": "/api/v1/auth/status",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",
