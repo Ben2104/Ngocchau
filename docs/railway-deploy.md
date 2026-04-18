@@ -4,7 +4,7 @@ Runbook for the production Railway service that hosts `apps/api`.
 
 ## Ownership
 
-- Production deploys should be triggered by `.github/workflows/deploy.yml`.
+- Production deploys should be triggered by the deploy jobs inside `.github/workflows/ci.yml`.
 - Disable Railway Git auto-deploy for this service so it does not race against GitHub Actions.
 - Railway should build from the repository root using `railway.json`.
 

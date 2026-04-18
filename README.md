@@ -125,23 +125,22 @@ pnpm vercel:deploy:web
 - `.vercel/` is ignored so local project linkage does not get committed.
 - The Vercel project should build from `apps/web`, but it must also include files outside the root directory during the build so workspace packages under `packages/*` remain accessible.
 - Do not keep a `buildCommand` override in `vercel.json`; preview deployments should use the Vercel project settings for `apps/web`.
-- If Vercel Git auto-deploy stays enabled, Vercel can start a parallel production build on push before `.github/workflows/deploy.yml` runs.
+- If Vercel Git auto-deploy stays enabled, Vercel can start a parallel production build on push before the GitHub Actions CI workflow reaches the production deploy jobs.
 - Backend runtime still depends on a valid `SUPABASE_SERVICE_ROLE_KEY` in `apps/api/.env`.
 
 ## GitHub Actions CI/CD
 
-The repository now includes two workflows under `.github/workflows`:
+The repository now uses a single workflow under `.github/workflows`:
 
-- `ci.yml`: runs on every pull request and on pushes to `main`, then executes `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, and a compiled backend runtime smoke test against `GET /api/v1/auth/status` using staging secrets.
-- `deploy.yml`: runs only after the `CI` workflow succeeds for a push to `main`, then deploys only the parts of the monorepo that changed.
+- `ci.yml`: runs on every pull request and on pushes to `main`. It detects changed targets, runs `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, boots the compiled backend for a runtime smoke test against `GET /api/v1/auth/status` using staging Supabase secrets, and on `push` to `main` continues into the production deploy jobs for Railway and Vercel.
 
 Deployment behavior:
 
-- Pull requests run CI only and never trigger production deploys.
-- Pushes to `main` run CI first.
-- After CI passes on `main`, the deploy workflow checks the changed paths and performs the production deploys.
-- Production API deploy must pass a post-deploy healthcheck before any dependent web deploy is allowed to proceed.
-- Web production deploy should be owned by `deploy.yml`; disable Vercel Git auto-deploy so Vercel does not run a second production deployment in parallel.
+- Pull requests run verification only and never trigger production deploys.
+- Pushes to `main` run the same CI workflow first, then continue into the production deploy jobs.
+- The workflow checks changed paths so web-only changes deploy only `apps/web`, API-only changes deploy only `apps/api`, and shared package changes can deploy both.
+- Production API deploy must pass a post-deploy Railway healthcheck before any dependent web deploy is allowed to proceed.
+- Web production deploy should be owned by `ci.yml`; disable Vercel Git auto-deploy so Vercel does not run a second production deployment in parallel.
 - Web-only changes deploy `apps/web` to Vercel.
 - API-only changes deploy `apps/api` to Railway.
 - Shared package changes can deploy both targets, with web waiting for a healthy API when both deploy.
@@ -155,9 +154,6 @@ Required GitHub Actions secrets:
 - `CI_SUPABASE_URL`
 - `CI_SUPABASE_ANON_KEY`
 - `CI_SUPABASE_SERVICE_ROLE_KEY`
-- `CI_SUPABASE_JWT_ISSUER`
-- `CI_SUPABASE_JWT_AUDIENCE`
-- `CI_SUPABASE_JWKS_URL`
 - `RAILWAY_TOKEN`
 - `RAILWAY_PROJECT_ID`
 - `RAILWAY_ENVIRONMENT`
@@ -167,6 +163,7 @@ Required GitHub Actions secrets:
 Important runtime notes:
 
 - Keep production runtime secrets and environment variables in Vercel and Railway. The CI workflow uses staging backend secrets only for pre-deploy runtime smoke checks.
+- The backend smoke job derives `SUPABASE_JWT_ISSUER`, `SUPABASE_JWKS_URL`, and `SUPABASE_JWT_AUDIENCE=authenticated` from `CI_SUPABASE_URL`, so those do not need separate GitHub secrets unless your Supabase setup is non-standard.
 - The CI workflow still injects safe placeholder public env values so the Next.js build can complete.
 - Supabase migrations remain manual in this first version of the pipeline. GitHub Actions does not auto-apply schema changes.
 

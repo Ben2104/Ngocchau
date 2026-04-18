@@ -14,7 +14,70 @@ permissions:
   contents: read
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      api: ${{ steps.filter.outputs.api }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed targets
+        id: filter
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+            head_sha="${{ github.event.pull_request.head.sha }}"
+            changed_files="$(git diff --name-only "$base_sha" "$head_sha")"
+          elif [[ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]]; then
+            changed_files="$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")"
+          else
+            changed_files="$(git show --pretty='' --name-only "${{ github.sha }}")"
+          fi
+
+          web=false
+          api=false
+
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+
+            case "$file" in
+              apps/web/*|packages/constants/*|packages/types/*|packages/ui/*|packages/utils/*|packages/validation/*|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|turbo.json|tsconfig.base.json|.nvmrc)
+                web=true
+                ;;
+            esac
+
+            case "$file" in
+              apps/api/*|packages/constants/*|packages/types/*|packages/utils/*|packages/validation/*|supabase/types/*|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|turbo.json|tsconfig.base.json|railway.json|.nvmrc)
+                api=true
+                ;;
+            esac
+          done <<< "$changed_files"
+
+          {
+            echo "web=$web"
+            echo "api=$api"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write change summary
+        shell: bash
+        run: |
+          {
+            echo "### Change detection"
+            echo "- Event: ${{ github.event_name }}"
+            echo "- Tested commit: ${{ github.sha }}"
+            echo "- Web affected: ${{ steps.filter.outputs.web }}"
+            echo "- API affected: ${{ steps.filter.outputs.api }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   quality-gates:
+    needs: detect-changes
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_API_BASE_URL: http://localhost:4000/api/v1
@@ -52,7 +115,9 @@ jobs:
         run: pnpm build
 
   backend-runtime-smoke:
-    needs: quality-gates
+    needs:
+      - detect-changes
+      - quality-gates
     runs-on: ubuntu-latest
     env:
       PORT: 4010
@@ -66,12 +131,9 @@ jobs:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_pMEes6MqbGDgpbwfiZJuiA_AweZeoQS
       NEXT_PUBLIC_APP_NAME: Gold Shop System
       NEXT_PUBLIC_DEFAULT_TIMEZONE: Asia/Ho_Chi_Minh
-      SUPABASE_URL: ${{ secrets.CI_SUPABASE_URL }}
-      SUPABASE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY }}
-      SUPABASE_JWT_ISSUER: ${{ secrets.CI_SUPABASE_JWT_ISSUER }}
-      SUPABASE_JWT_AUDIENCE: ${{ secrets.CI_SUPABASE_JWT_AUDIENCE }}
-      SUPABASE_JWKS_URL: ${{ secrets.CI_SUPABASE_JWKS_URL }}
+      CI_SUPABASE_URL: ${{ secrets.CI_SUPABASE_URL }}
+      CI_SUPABASE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY }}
+      CI_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -89,12 +151,25 @@ jobs:
       - name: Validate backend smoke secrets
         shell: bash
         run: |
-          test -n "$SUPABASE_URL"
-          test -n "$SUPABASE_ANON_KEY"
-          test -n "$SUPABASE_SERVICE_ROLE_KEY"
-          test -n "$SUPABASE_JWT_ISSUER"
-          test -n "$SUPABASE_JWT_AUDIENCE"
-          test -n "$SUPABASE_JWKS_URL"
+          test -n "$CI_SUPABASE_URL"
+          test -n "$CI_SUPABASE_ANON_KEY"
+          test -n "$CI_SUPABASE_SERVICE_ROLE_KEY"
+
+      - name: Prepare backend smoke environment
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          normalized_supabase_url="${CI_SUPABASE_URL%/}"
+
+          {
+            echo "SUPABASE_URL=$normalized_supabase_url"
+            echo "SUPABASE_ANON_KEY=$CI_SUPABASE_ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$CI_SUPABASE_SERVICE_ROLE_KEY"
+            echo "SUPABASE_JWT_ISSUER=${normalized_supabase_url}/auth/v1"
+            echo "SUPABASE_JWT_AUDIENCE=authenticated"
+            echo "SUPABASE_JWKS_URL=${normalized_supabase_url}/auth/v1/.well-known/jwks.json"
+          } >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -138,3 +213,158 @@ jobs:
           echo "Timed out waiting for backend healthcheck."
           cat api-runtime.log
           exit 1
+
+  deploy-api:
+    needs:
+      - detect-changes
+      - backend-runtime-smoke
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.detect-changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+      RAILWAY_ENVIRONMENT: ${{ secrets.RAILWAY_ENVIRONMENT }}
+      RAILWAY_SERVICE: ${{ secrets.RAILWAY_SERVICE }}
+      RAILWAY_PUBLIC_API_URL: ${{ secrets.RAILWAY_PUBLIC_API_URL }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Validate Railway secrets
+        shell: bash
+        run: |
+          test -n "$RAILWAY_TOKEN"
+          test -n "$RAILWAY_PROJECT_ID"
+          test -n "$RAILWAY_ENVIRONMENT"
+          test -n "$RAILWAY_SERVICE"
+          test -n "$RAILWAY_PUBLIC_API_URL"
+
+      - name: Validate Railway config
+        shell: bash
+        run: |
+          node -e 'const config=require("./railway.json"); if (config.build?.builder !== "RAILPACK") { throw new Error("railway.json must use RAILPACK."); }'
+          node -e 'const config=require("./railway.json"); if (config.deploy?.startCommand !== "node apps/api/dist/main.js") { throw new Error("railway.json startCommand must run the compiled API directly."); }'
+          node -e 'const config=require("./railway.json"); if (config.deploy?.healthcheckPath !== "/api/v1/auth/status") { throw new Error("railway.json healthcheckPath must stay on /api/v1/auth/status."); }'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy API to Railway
+        shell: bash
+        run: |
+          pnpm dlx @railway/cli@latest up --ci --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT" --service "$RAILWAY_SERVICE"
+
+  railway-production-smoke:
+    needs:
+      - detect-changes
+      - deploy-api
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.detect-changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    env:
+      RAILWAY_PUBLIC_API_URL: ${{ secrets.RAILWAY_PUBLIC_API_URL }}
+    steps:
+      - name: Validate Railway public URL
+        shell: bash
+        run: |
+          test -n "$RAILWAY_PUBLIC_API_URL"
+
+      - name: Smoke test Railway production API
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          health_url="${RAILWAY_PUBLIC_API_URL%/}/api/v1/auth/status"
+
+          for attempt in {1..18}; do
+            if curl --fail --silent --show-error "$health_url" > railway-health.json; then
+              echo "Railway production healthcheck passed on attempt ${attempt}."
+              cat railway-health.json
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "Railway production healthcheck failed after deploy."
+          exit 1
+
+  deploy-web:
+    needs:
+      - detect-changes
+      - backend-runtime-smoke
+      - deploy-api
+      - railway-production-smoke
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.detect-changes.outputs.web == 'true' &&
+      (
+        needs.detect-changes.outputs.api != 'true' ||
+        (
+          needs.deploy-api.result == 'success' &&
+          needs.railway-production-smoke.result == 'success'
+        )
+      )
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Validate Vercel secrets
+        shell: bash
+        run: |
+          test -n "$VERCEL_TOKEN"
+          test -n "$VERCEL_ORG_ID"
+          test -n "$VERCEL_PROJECT_ID"
+
+      - name: Validate monorepo build configuration
+        shell: bash
+        run: |
+          node -e 'const pkg=require("./apps/web/package.json"); if (!pkg.scripts || !pkg.scripts["build"]) { throw new Error("apps/web/package.json must define a build script for Vercel deployments."); }'
+          node -e 'const config=require("./vercel.json"); if (Object.prototype.hasOwnProperty.call(config, "buildCommand")) { throw new Error("vercel.json must not override buildCommand; the Vercel project should use apps/web project settings instead."); }'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy web to Vercel
+        shell: bash
+        run: |
+          pnpm dlx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+          pnpm dlx vercel@latest build --prod --token="$VERCEL_TOKEN"
+          pnpm dlx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
