@@ -7,6 +7,7 @@ Runbook for the production Railway service that hosts `apps/api`.
 - Production deploys should be triggered by the deploy jobs inside `.github/workflows/ci.yml`.
 - Disable Railway Git auto-deploy for this service so it does not race against GitHub Actions.
 - Railway should build from the repository root using `railway.json`.
+- Railway must host only `apps/api` for this repo. Do not keep or recreate a separate `@gold-shop/web` service in Railway; the web app deploys only from Vercel.
 
 ## Runtime Shape
 
